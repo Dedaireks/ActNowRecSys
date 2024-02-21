@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    ports:
+      - 5432:5432
+    image: postgres:14-alpine
+    container_name: actnow_db_test2
+    restart: always
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+    networks:
+      - fastapiappnetwork
+
+  app:
+    image: actnowtestapp
+    container_name: actnow_test2
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/home
+    depends_on:
+      - db
+    networks:
+      - fastapiappnetwork
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+      - POSTGRES_PORT=$DB_PORT
+      - POSTGRES_HOST=$DB_HOST
+
+networks:
+  fastapiappnetwork:
