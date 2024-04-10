@@ -18,6 +18,5 @@ class Goals(Base):
     goal_title = Column(String, index=True)
     goal_owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    stories = relationship("Story", back_populates="goals")
-
-    owner = relationship("User", back_populates="goals")
+    stories = relationship("Story", back_populates="posts")
+    owner = relationship("User", back_populates="posts")

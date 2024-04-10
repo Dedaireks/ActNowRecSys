@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session  # Импортируем класс Session для работы с сессиями SQLAlchemy
-from Models.goal import Goals # Импортируем модель Story
-from Schemas.goal import GoalBase
+from Models.post import Goals # Импортируем модель Story
+from Schemas.post import PostBase
 
 
-def create_goal(session: Session, goal: GoalBase):  # Функция для создания истории
+def create_goal(session: Session, goal: PostBase):  # Функция для создания истории
     db_goal = Goals(**goal.dict())  # Создаем новую историю из данных, полученных от пользователя
     session.add(db_goal)  # Добавляем новую историю в сессию
     session.commit()  # Сохраняем изменения в базе данных
