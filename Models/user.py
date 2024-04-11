@@ -1,4 +1,7 @@
+from typing import Dict
+
 import jwt
+from fastapi import HTTPException, Depends
 from sqlalchemy import (
     LargeBinary,
     Column,
@@ -8,11 +11,15 @@ from sqlalchemy import (
     PrimaryKeyConstraint
 )
 from sqlalchemy.orm import relationship
+from starlette import status
 
 import settings
+from Routers.auth import oauth2_scheme
 from database_initializer import Base
 
 import bcrypt
+
+
 #   from redis_initializer import redis
 
 
@@ -26,40 +33,51 @@ class User(Base):
     second_name = Column(String(255), index=True, nullable=False)
     patronymic = Column(String(255), index=True)
     hashed_password = Column(LargeBinary, nullable=False)
-    storys = relationship("Story", back_populates="owner")
+
+    stories = relationship("Story", back_populates="owner")
+    posts = relationship("Post", back_populates="owner")
 
     UniqueConstraint("email", name="uq_user_email")
     PrimaryKeyConstraint("id", name="pk_user_id")
 
-
     def __repr__(self):
-        """Returns string representation of model instance"""
         return "<User {user_name!r}>".format(user_name=self.user_name)
 
     @staticmethod
-    def hash_password(password) -> str:
-        """Преобразование пароля из текстовой формы в
-        криптографические хэши
-        """
+    def hash_password(password) -> bytes:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
     def validate_password(self, password) -> bool:
-        """Подтверждает валидность пароля"""
         return {
             "access_token": jwt.encode(
-                {"user_name": self.user_name, "email": self.email},
+                {"user_name": self.user_name, "id": self.id},
                 "ApplicationSecretKey"
             )
         }
 
     def generate_token(self) -> dict:
-        """Generate access token for user"""
         return {
             "access_token": jwt.encode(
-                {"user_name": self.user_name, "email": self.email},
+                {"user_name": self.user_name, "id": self.id},
                 settings.SECRET_KEY
             )
         }
+
+    def get_current_user_by_token(token: str = Depends(oauth2_scheme)):
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired"
+            )
+        except jwt.InvalidTokenError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+
 
 # import uuid
 # import redis

@@ -1,15 +1,32 @@
-from sqlalchemy.orm import Session  # Импортируем класс Session для работы с сессиями SQLAlchemy
-from Models.post import Goals # Импортируем модель Story
+from sqlalchemy.orm import Session
+from Models.post import Post
 from Schemas.post import PostBase
+from Models.user import User
 
 
-def create_goal(session: Session, goal: PostBase):  # Функция для создания истории
-    db_goal = Goals(**goal.dict())  # Создаем новую историю из данных, полученных от пользователя
-    session.add(db_goal)  # Добавляем новую историю в сессию
-    session.commit()  # Сохраняем изменения в базе данных
-    session.refresh(db_goal)  # Обновляем данные истории из базы данных
-    return db_goal  # Возвращаем созданную историю
+def create_post(session: Session, post: PostBase, token: str):
+    curent_user = User.get_current_user_by_token(token)
+    owner_id = curent_user['id']
+    db_post = Post(**post.dict(), owner_id=owner_id)
+    session.add(db_post)
+    session.commit()
+    session.refresh(db_post)
+    return db_post
 
 
-def get_story_by_id(session: Session, goal_id: int):  # Функция для получения истории по id
-    return session.query(Goals).filter(Goals.id == goal_id).one()  # Возвращаем историю с заданным id
+def get_post_by_id(session: Session, post_id: int):
+    return session.query(Post).filter(Post.id == post_id).one()
+
+
+def get_all_user_posts(session: Session, owner_id: int):
+    return session.query(Post).filter(Post.owner_id == owner_id).all()
+
+
+def change_post(session: Session, post_id: int, post: PostBase):
+    db_post = session.query(Post).filter(Post.id == post_id).one()
+    for key, value in post.dict().items():
+        if key != 'owmer_id':
+            setattr(db_post, key, value)
+    session.commit()
+    session.refresh(db_post)
+    return db_post

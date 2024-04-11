@@ -2,12 +2,20 @@ from pydantic import BaseModel
 from datetime import date, time
 
 
-class GoalBase(BaseModel):
-    goal_event_date: date
-    goal_event_time: time
-    goal_location: str
-    goal_description: str
-    goal_title: str
+class PostBase(BaseModel):
+    event_date: date
+    event_time: time
+    location: str
+    description: str
+    title: str
+
+
+class Post(PostBase):
+    id: int
+    owner_id: int
 
     class Config:
         from_attributes = True
+
+
+

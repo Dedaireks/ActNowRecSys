@@ -1,15 +1,38 @@
-from sqlalchemy.orm import Session  # Импортируем класс Session для работы с сессиями SQLAlchemy
-from Models.story import Story  # Импортируем модель Story
-from Schemas.story import StoryCreateSchema  # Импортируем схему StoryCreateSchema для валидации данных
+from sqlalchemy.orm import Session
+from Models.story import Story
+from Models.user import User
+from Schemas.story import StoryCreateSchema, StoryChangeSchema
 
 
-def create_story(session: Session, story: StoryCreateSchema):  # Функция для создания истории
-    db_story = Story(**story.dict())  # Создаем новую историю из данных, полученных от пользователя
-    session.add(db_story)  # Добавляем новую историю в сессию
-    session.commit()  # Сохраняем изменения в базе данных
-    session.refresh(db_story)  # Обновляем данные истории из базы данных
-    return db_story  # Возвращаем созданную историю
+def create_story(session: Session, story: StoryCreateSchema, token: str):
+    current_user = User.get_current_user_by_token(token)
+    owner_id = current_user['id']
+    db_story = Story(**story.dict(), owner_id=owner_id)
+    session.add(db_story)
+    session.commit()
+    session.refresh(db_story)
+    return db_story
 
 
-def get_story_by_id(session: Session, story_id: int):  # Функция для получения истории по id
-    return session.query(Story).filter(Story.id == story_id).one()  # Возвращаем историю с заданным id
+def get_story_by_id(session: Session, story_id: int):
+    return session.query(Story).filter(Story.id == story_id).one()
+
+
+def get_all_user_stories(session: Session, owner_id: int):
+    return session.query(Story).filter(Story.owner_id == owner_id).all()
+
+
+def get_all_post_story(session: Session, post_id: int):
+    return session.query(Story).filter(Story.post_id == post_id).all()
+
+
+def change_story(session: Session, story_id, story: StoryChangeSchema):
+    db_story = session.query(Story).filter(Story.id == story_id).one()
+    for key, value in story.dict().items():
+        if key not in ['owner_id', 'post_id']:
+            setattr(db_story, key, value)
+    session.commit()
+    session.refresh(db_story)
+    return db_story
+
+

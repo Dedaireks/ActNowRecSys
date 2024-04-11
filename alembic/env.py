@@ -9,6 +9,8 @@ from database_initializer import Base
 from settings import SQLALCHEMY_DATABASE_URL
 
 from Models.user import User
+from Models.story import Story
+from Models.post import Post
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

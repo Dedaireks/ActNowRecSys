@@ -1,22 +1,26 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time
 from sqlalchemy.orm import relationship
 
+from Models.user import User
 from database_initializer import Base
 
 
-class Goals(Base):
-    __tablename__ = "goals"
+class Post(Base):
+    __tablename__ = "post"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    stories_count_by_goal = Column(Integer, index=True)
-    goal_favorites_count = Column(Integer, index=True)
-    goal_cost = Column(Integer, index=True)
-    goal_event_date = Column(Date, index=True)
-    goal_event_time = Column(Time, index=True)
-    goal_location = Column(String, index=True)
-    goal_description = Column(String, index=True)
-    goal_title = Column(String, index=True)
-    goal_owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    favorites_count = Column(Integer, index=True, nullable=True)
+    cost = Column(Integer, index=True, nullable=True)
+    event_date = Column(Date, index=True)
+    event_time = Column(Time, index=True)
+    location = Column(String, index=True)
+    description = Column(String, index=True)
+    title = Column(String, index=True)
+
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    owner = relationship("User", back_populates="posts")
 
     stories = relationship("Story", back_populates="posts")
-    owner = relationship("User", back_populates="posts")
+
+
+
