@@ -12,3 +12,4 @@ SQLALCHEMY_DATABASE_URL = "postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOS
 )
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+TOKEN_EXPIRE_TIME = os.getenv("TOKEN_EXPIRE_TIME")

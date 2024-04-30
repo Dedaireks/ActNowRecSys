@@ -1,16 +1,18 @@
 from pydantic import BaseModel
 
 
-class TagsCreate(BaseModel):
+class ComplaintsCreate(BaseModel):
     value: str
-    owner_id: int
-    post_id: int
-    story_id: int
 
 
-class Tags(TagsCreate):
-    id: int
+class ComplaintsPostSchema(ComplaintsCreate):
+    pass
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+
+class ComplaintsStorySchema(ComplaintsCreate):
+    pass
+
+
+class ComplaintsUserSchema(ComplaintsCreate):
+    pass
+

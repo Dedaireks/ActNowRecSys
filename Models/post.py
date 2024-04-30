@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, ARRAY
 from sqlalchemy.orm import relationship
 
-from Models.user import User
+from Models.tags import post_tags
 from database_initializer import Base
 
 
@@ -16,11 +16,19 @@ class Post(Base):
     location = Column(String, index=True)
     description = Column(String, index=True)
     title = Column(String, index=True)
+    content = Column(ARRAY(String), index=True, nullable=True)
+
+    tags = relationship("Tags", secondary=post_tags, backref="post")
 
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     owner = relationship("User", back_populates="posts")
 
+    post_likes = relationship("PostLike", back_populates="post")
     stories = relationship("Story", back_populates="posts")
+
+    complaints = relationship("Complaint_post", back_populates="post")
+
+
 
 
 

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 from datetime import date, time
 
@@ -8,6 +10,7 @@ class PostBase(BaseModel):
     location: str
     description: str
     title: str
+    content: Optional[list]
 
 
 class Post(PostBase):

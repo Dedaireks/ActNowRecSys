@@ -1,10 +1,11 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from Models.post import Post
+from Models.post_likes import PostLike
 from Schemas.post import PostBase
 from Services.database.post import create_post, get_post_by_id, change_post
 from Services.database.story import get_all_post_story
@@ -45,7 +46,7 @@ def delete_post(post_id: int,
     post = get_post_by_id(db, post_id=post_id)
     user = User.get_current_user_by_token(token)
     user_id = user['id']
-    if post.owner_id != user_id:
+    if post.user_id != user_id:
         raise HTTPException(status_code=403, detail="У вас нет прав на удаление этого поста")
     if post is None:
         raise HTTPException(status_code=404, detail="Пост не найден")
@@ -65,9 +66,43 @@ def update_post(post_id: int,
     post = get_post_by_id(session=db, post_id=post_id)
     user = User.get_current_user_by_token(token)
     user_id = user["id"]
-    if post.owner_id != user_id:
+    if post.user_id != user_id:
         raise HTTPException(status_code=403, detail="У вас нет прав на изменение этого поста")
     if post is None:
         raise HTTPException(status_code=404, detail="Пост не найден")
     change_post(session=db, post_id=post_id, post=postscheme)
     return {"message": "Пост изменен"}
+
+
+@router.post("/like_post/{post_id}")
+def create_and_delete_like(
+        post_id: int,
+        db: Session = Depends(get_db),
+        token: str = Depends(oauth2_scheme)
+):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    current_user = User.get_current_user_by_token(token)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    post_like = db.query(PostLike).filter(PostLike.owner_id == current_user["id"], PostLike.post_id == post_id).first()
+    if post_like:
+        db.delete(post_like)
+        db.commit()
+        return {"message": "Like deleted successfully"}
+    elif not post_like:
+        new_post_like = PostLike(owner_id= current_user["id"], post_id=post_id)
+        db.add(new_post_like)
+        db.commit()
+        return {"message": "Like added successfully"}
+
+
+@router.get("post_likes_count/{post_id}")
+def get_likes_count(
+        post_id: int,
+        db: Session = Depends(get_db)
+):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    likes_count = db.query(PostLike).filter(PostLike.post_id == post_id).count()
+    return {"likes_count": likes_count}

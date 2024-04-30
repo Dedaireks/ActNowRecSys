@@ -1,7 +1,12 @@
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-
 from Models.user import User
-from Schemas.user import UserCreateSchema, UserBaseSchema, UserChangeSchema
+from Schemas.user import UserCreateSchema, UserChangeSchema
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+
 
 
 def create_user(session: Session, user: UserCreateSchema):
@@ -16,7 +21,7 @@ def get_user(session: Session, user_name: str):
     return session.query(User).filter(User.user_name == user_name).one()
 
 
-def change_user(session: Session, username:  str, user: UserChangeSchema):
+def change_user(session: Session, username: str, user: UserChangeSchema):
     db_user = session.query(User).filter(User.user_name == username).one()
     for key, value in user.dict().items():
         setattr(db_user, key, value)
@@ -34,4 +39,3 @@ def change_user(session: Session, username:  str, user: UserChangeSchema):
 #     return user
 # def get_user_by_id(session: Session, user_id: int):
 #     return session.query(User).filter(User.id == user_id).one()
-

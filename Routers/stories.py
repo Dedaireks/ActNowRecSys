@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from Models.story import Story
+from Models.story_likes import Like
 from Models.user import User
 from Schemas.story import StoryCreateSchema, StoryChangeSchema
 from Services.database.story import get_story_by_id, create_story, get_all_user_stories, change_story
@@ -51,12 +52,11 @@ def read_user_stories(username: str, db: Session = Depends(get_db)):
 def delete_story(story_id: int,
                  db: Session = Depends(get_db),
                  token: str = Depends(oauth2_scheme)):
-
     story = get_story_by_id(db, story_id=story_id)
     user = User.get_current_user_by_token(token)
     user_id = user['id']
 
-    if story.owner_id != user_id:
+    if story.user_id != user_id:
         raise HTTPException(status_code=403, detail="У вас нет прав на удаление этого поста")
 
     if story is None:
@@ -76,9 +76,39 @@ def update_story(
     story = get_story_by_id(db, story_id=story_id)
     user = User.get_current_user_by_token(token)
     user_id = user["id"]
-    if story.owner_id != user_id:
+    if story.user_id != user_id:
         raise HTTPException(status_code=403, detail="У вас нет прав на изменение этой истории")
     if story is None:
         raise HTTPException(status_code=404, detail="История не найдена")
     change_story(story_id=story_id, session=db, story=storyscheme)
     return {"message": "История изменена"}
+
+
+@router.post('/like_story/{story_id}')
+def create_and_delete_like(story_id: int,
+                           db: Session = Depends(get_db),
+                           token: str = Depends(oauth2_scheme),
+                           ):
+    story = db.query(Story).filter(Story.id == story_id).first()
+    current_user = User.get_current_user_by_token(token)
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    like = db.query(Like).filter(Like.owner_id == current_user["id"], Like.story_id == story_id).first()
+    if like:
+        db.delete(like)
+        db.commit()
+        return {"message": "Like deleted successfully"}
+    elif not like:
+        new_like = Like(owner_id=current_user["id"], story_id=story_id)
+        db.add(new_like)
+        db.commit()
+        return {"message": "Like added successfully"}
+
+
+@router.get("/story/{story_id}/likes_count")
+def get_likes_count(story_id: int, db: Session = Depends(get_db)):
+    story = db.query(Story).filter(Story.id == story_id).first()
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    likes_count = db.query(Like).filter(Like.story_id == story_id).count()
+    return {"likes_count": likes_count}

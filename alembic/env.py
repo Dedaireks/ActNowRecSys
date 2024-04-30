@@ -11,6 +11,12 @@ from settings import SQLALCHEMY_DATABASE_URL
 from Models.user import User
 from Models.story import Story
 from Models.post import Post
+from Models.story_likes import Like
+from Models.post_likes import PostLike
+from Models.complaint_story import Complaint_story
+from Models.complaint_post import Complaint_post
+from Models.complaints_user import Complaint_user
+from Models import tags
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

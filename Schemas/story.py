@@ -1,9 +1,11 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class StoryCreateSchema(BaseModel):
     descriptions: str
-    content: str
+    content: Optional[list]
     post_id: int
 
 
