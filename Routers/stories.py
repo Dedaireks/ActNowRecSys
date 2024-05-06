@@ -10,6 +10,8 @@ from Services.database.story import get_story_by_id, create_story, get_all_user_
 from Services.database.user import get_user
 from database_initializer import get_db
 from typing import List
+from Services.database.redis import verify_token_in_redis
+
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -19,7 +21,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def create_story_endpoint(story: StoryCreateSchema,
                           token: str = Depends(oauth2_scheme),
                           db: Session = Depends(get_db)):
-    return create_story(session=db, story=story, token=token)
+    if verify_token_in_redis(token):
+        return create_story(session=db, story=story, token=token)
+    else:
+        raise HTTPException(status_code=401, detail="Токен устарел")
 
 
 @router.get("/get_stories", response_model=List[StoryCreateSchema])
@@ -52,19 +57,22 @@ def read_user_stories(username: str, db: Session = Depends(get_db)):
 def delete_story(story_id: int,
                  db: Session = Depends(get_db),
                  token: str = Depends(oauth2_scheme)):
-    story = get_story_by_id(db, story_id=story_id)
-    user = User.get_current_user_by_token(token)
-    user_id = user['id']
+    if verify_token_in_redis(token):
+        story = get_story_by_id(db, story_id=story_id)
+        user = User.get_current_user_by_token(token)
+        user_id = user['id']
 
-    if story.user_id != user_id:
-        raise HTTPException(status_code=403, detail="У вас нет прав на удаление этого поста")
+        if story.user_id != user_id:
+            raise HTTPException(status_code=403, detail="У вас нет прав на удаление этого поста")
 
-    if story is None:
-        raise HTTPException(status_code=404, detail="История не найдена")
+        if story is None:
+            raise HTTPException(status_code=404, detail="История не найдена")
 
-    db.delete(story)
-    db.commit()
-    return {"message": "История успешно удалена"}
+        db.delete(story)
+        db.commit()
+        return {"message": "История успешно удалена"}
+    else:
+        raise HTTPException(status_code=401, detail="Токен устарел")
 
 
 @router.patch("/stories_change/{story_id}")
@@ -73,15 +81,19 @@ def update_story(
         storyscheme: StoryChangeSchema,
         db: Session = Depends(get_db),
         token: str = Depends(oauth2_scheme)):
-    story = get_story_by_id(db, story_id=story_id)
-    user = User.get_current_user_by_token(token)
-    user_id = user["id"]
-    if story.user_id != user_id:
-        raise HTTPException(status_code=403, detail="У вас нет прав на изменение этой истории")
-    if story is None:
-        raise HTTPException(status_code=404, detail="История не найдена")
-    change_story(story_id=story_id, session=db, story=storyscheme)
-    return {"message": "История изменена"}
+
+    if verify_token_in_redis(token):
+        story = get_story_by_id(db, story_id=story_id)
+        user = User.get_current_user_by_token(token)
+        user_id = user["id"]
+        if story.user_id != user_id:
+            raise HTTPException(status_code=403, detail="У вас нет прав на изменение этой истории")
+        if story is None:
+            raise HTTPException(status_code=404, detail="История не найдена")
+        change_story(story_id=story_id, session=db, story=storyscheme)
+        return {"message": "История изменена"}
+    else:
+        raise HTTPException(status_code=401, detail="Токен устарел")
 
 
 @router.post('/like_story/{story_id}')
@@ -89,20 +101,24 @@ def create_and_delete_like(story_id: int,
                            db: Session = Depends(get_db),
                            token: str = Depends(oauth2_scheme),
                            ):
-    story = db.query(Story).filter(Story.id == story_id).first()
-    current_user = User.get_current_user_by_token(token)
-    if not story:
-        raise HTTPException(status_code=404, detail="Story not found")
-    like = db.query(Like).filter(Like.owner_id == current_user["id"], Like.story_id == story_id).first()
-    if like:
-        db.delete(like)
-        db.commit()
-        return {"message": "Like deleted successfully"}
-    elif not like:
-        new_like = Like(owner_id=current_user["id"], story_id=story_id)
-        db.add(new_like)
-        db.commit()
-        return {"message": "Like added successfully"}
+
+    if verify_token_in_redis(token):
+        story = db.query(Story).filter(Story.id == story_id).first()
+        current_user = User.get_current_user_by_token(token)
+        if not story:
+            raise HTTPException(status_code=404, detail="Story not found")
+        like = db.query(Like).filter(Like.owner_id == current_user["id"], Like.story_id == story_id).first()
+        if like:
+            db.delete(like)
+            db.commit()
+            return {"message": "Like deleted successfully"}
+        elif not like:
+            new_like = Like(owner_id=current_user["id"], story_id=story_id)
+            db.add(new_like)
+            db.commit()
+            return {"message": "Like added successfully"}
+    else:
+        raise HTTPException(status_code=401, detail="Токен устарел")
 
 
 @router.get("/story/{story_id}/likes_count")

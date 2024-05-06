@@ -1,0 +1,7 @@
+nginx
+.env
+docker-compose.yml
+Dockerfile
+Pipfile
+Pipfile.lock
+settings.py

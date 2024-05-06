@@ -7,7 +7,7 @@ from Schemas.user import UserSchema, UserCreateSchema
 from Services.database import user as user_db_services
 from database_initializer import get_db
 from Services.database.auth import generate_token, validate_password, hash_password
-# from Services.database.redis import logout_user
+from Services.database.redis import logout_user
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -47,7 +47,7 @@ def login(
     return generate_token(user)
 
 
-# @router.post('/logout')
-# def logout(token: str = Depends(oauth2_scheme)):
-#     logout_user(token)
-#     return {"detail": "Вы успешно вышли из системы"}
+@router.post('/logout')
+def logout(token: str = Depends(oauth2_scheme)):
+    logout_user(token)
+    return {"detail": "Вы успешно вышли из системы"}

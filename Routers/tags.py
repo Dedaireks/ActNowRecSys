@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+
+from Services.database.redis import verify_token_in_redis
 from database_initializer import get_db
 from Models.tags import Tags
 from Schemas.tags import Tag, TagBase
@@ -20,19 +22,22 @@ def create_tag(tag: TagBase, session: Session = Depends(get_db), token: str = De
 
 @router.post("/user_tag")
 def user_tag(tag_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = User.get_current_user_by_token(token)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user_id = user["id"]
-    tag = db.query(Tags).get(tag_id)
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-    user = db.query(User).get(user_id)
+    if verify_token_in_redis(token):
+        user = User.get_current_user_by_token(token)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        tag = db.query(Tags).get(tag_id)
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        user = db.query(User).get(user_id)
 
-    user.tags.append(tag)
-    db.commit()
+        user.tags.append(tag)
+        db.commit()
 
-    return{"message": f"Tag {tag.name} assigned to user {user_id}"}
+        return{"message": f"Tag {tag.name} assigned to user {user_id}"}
+    else:
+        raise HTTPException(status_code=401, detail="Токен устарел")
 
 
 @router.post("/post_tag")
