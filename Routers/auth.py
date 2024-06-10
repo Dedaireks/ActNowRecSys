@@ -1,5 +1,6 @@
 from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Body
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from Models import user as user_model
@@ -18,11 +19,17 @@ def signup(
         payload: UserCreateSchema = Body(),
         session: Session = Depends(get_db)
 ):
-    payload.hashed_password = hash_password(payload.hashed_password)
-    return user_db_services.create_user(session, user=payload)
-
+    try:
+        payload.hashed_password = hash_password(payload.hashed_password)
+        return user_db_services.create_user(session, user=payload)
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=400,
+                            detail="Ошибка при создании пользователя, возможно, такой пользователь уже существует")
 
 #  Работает
+
+
 @router.post('/login', response_model=Dict)
 def login(
         payload: OAuth2PasswordRequestForm = Depends(),

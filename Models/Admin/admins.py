@@ -12,6 +12,7 @@ from Models.complaint_post import Complaint_post
 from Models.complaints_user import Complaint_user
 from Models.complaint_story import Complaint_story
 
+
 from sqladmin import Admin
 
 from main import app

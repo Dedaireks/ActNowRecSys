@@ -6,6 +6,7 @@ class Tags(Base):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String(255), nullable=False, index=True)
     name = Column(String, unique=True)
 
 

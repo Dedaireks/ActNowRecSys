@@ -1,7 +1,8 @@
-nginx
+nginx/nginx.conf
 .env
 docker-compose.yml
 Dockerfile
 Pipfile
 Pipfile.lock
 settings.py
+.gitignore

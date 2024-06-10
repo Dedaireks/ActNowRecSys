@@ -6,9 +6,6 @@ from Schemas.user import UserCreateSchema, UserChangeSchema
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-
-
-
 def create_user(session: Session, user: UserCreateSchema):
     db_user = User(**user.dict())
     session.add(db_user)

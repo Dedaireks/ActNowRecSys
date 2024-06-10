@@ -15,7 +15,7 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-@router.post("/complaint/post{id}", response_model=ComplaintsPostSchema)
+@router.post("/post/{post_id}", response_model=ComplaintsPostSchema)
 def create_complaint_post(complaint: ComplaintsPostSchema,
                           post_id: int,
                           token: str = Depends(oauth2_scheme),
@@ -27,7 +27,7 @@ def create_complaint_post(complaint: ComplaintsPostSchema,
         return create_post_complaint(session=db, complaint=complaint, post_id=post_id), {"message": "Жалоба отправлена"}
 
 
-@router.post("/complaint/story{id}", response_model=ComplaintsCreate)
+@router.post("/story/{story_id}", response_model=ComplaintsCreate)
 def create_complaint_story(complaint: ComplaintsStorySchema,
                            story_id: int,
                            token: str = Depends(oauth2_scheme),
@@ -40,7 +40,7 @@ def create_complaint_story(complaint: ComplaintsStorySchema,
                                                                                                        "отправлена"}
 
 
-@router.post("/complaint/user{id}", response_model=ComplaintsUserSchema)
+@router.post("/user/{user_id}", response_model=ComplaintsUserSchema)
 def create_complaint_user(complaint: ComplaintsUserSchema,
                           user_id: int,
                           token: str = Depends(oauth2_scheme),

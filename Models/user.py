@@ -57,3 +57,6 @@ class User(Base):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
+
+    def _str_(self):
+        return f'User #{self.email}'

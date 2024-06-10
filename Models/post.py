@@ -28,6 +28,8 @@ class Post(Base):
 
     complaints = relationship("Complaint_post", back_populates="post")
 
+    def _str_(self):
+        return f'Post #{self.id}'
 
 
 

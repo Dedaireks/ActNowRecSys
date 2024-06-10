@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from Models.post import Post
@@ -10,6 +11,7 @@ from Schemas.post import PostBase
 from Services.database.post import create_post, get_post_by_id, change_post
 from Services.database.redis import verify_token_in_redis
 from Services.database.story import get_all_post_story
+from Services.database.user import get_user
 from database_initializer import get_db
 from Models.user import User
 
@@ -32,10 +34,11 @@ def create_post_endpoint(post: PostBase,
 
 @router.get("/get/{post_id}", response_model=PostBase)
 def get_post(post_id: int, db: Session = Depends(get_db)):
-    post = get_post_by_id(db, post_id=post_id)
-    if post is None:
+    try:
+        post = get_post_by_id(db, post_id=post_id)
+        return post
+    except NoResultFound:
         raise HTTPException(status_code=404, detail="Пост не найден")
-    return post
 
 
 @router.get("/get_all", response_model=List[PostBase])
@@ -109,7 +112,7 @@ def create_and_delete_like(
         raise HTTPException(status_code=401, detail="Токен устарел")
 
 
-@router.get("post_likes_count/{post_id}")
+@router.get("/post_likes_count/{post_id}")
 def get_likes_count(
         post_id: int,
         db: Session = Depends(get_db)
@@ -119,3 +122,16 @@ def get_likes_count(
         raise HTTPException(status_code=404, detail="Post not found")
     likes_count = db.query(PostLike).filter(PostLike.post_id == post_id).count()
     return {"likes_count": likes_count}
+
+
+@router.get("/post_likes_user/{user_name}")
+def get_user_post_likes(username:str,
+                        db: Session = Depends(get_db)):
+    user = get_user(db, user_name=username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    likes = db.query(PostLike).filter(PostLike.owner_id == user.id).all()
+    if not user:
+        raise HTTPException(status_code=404, detail="Likes not found")
+    return {"user_post_likes": likes}
+

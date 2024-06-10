@@ -11,7 +11,7 @@ from Services.database.user import get_user
 from database_initializer import get_db
 from typing import List
 from Services.database.redis import verify_token_in_redis
-
+from sqlalchemy.orm.exc import NoResultFound
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -34,15 +34,16 @@ def get_all_stories(db: Session = Depends(get_db)):
 
 @router.get("/stories/{story_id}", response_model=StoryCreateSchema)
 def read_story(story_id: int, db: Session = Depends(get_db)):
-    story = get_story_by_id(db, story_id=story_id)
-
-    if story is None:
+    try:
+        story = get_story_by_id(db, story_id=story_id)
+        if story is None:
+            raise HTTPException(status_code=404, detail="История не найдена")
+        return story
+    except NoResultFound:
         raise HTTPException(status_code=404, detail="История не найдена")
 
-    return story
 
-
-@router.get("/users/{username}/stories_by_username", response_model=List[StoryCreateSchema])
+@router.get("/stories_by_username/{username}", response_model=List[StoryCreateSchema])
 def read_user_stories(username: str, db: Session = Depends(get_db)):
     user = get_user(db, user_name=username)
 
@@ -53,7 +54,7 @@ def read_user_stories(username: str, db: Session = Depends(get_db)):
     return stories
 
 
-@router.delete("/stories/{story_id}")
+@router.delete("/delete/{story_id}")
 def delete_story(story_id: int,
                  db: Session = Depends(get_db),
                  token: str = Depends(oauth2_scheme)):
@@ -81,7 +82,6 @@ def update_story(
         storyscheme: StoryChangeSchema,
         db: Session = Depends(get_db),
         token: str = Depends(oauth2_scheme)):
-
     if verify_token_in_redis(token):
         story = get_story_by_id(db, story_id=story_id)
         user = User.get_current_user_by_token(token)
@@ -101,7 +101,6 @@ def create_and_delete_like(story_id: int,
                            db: Session = Depends(get_db),
                            token: str = Depends(oauth2_scheme),
                            ):
-
     if verify_token_in_redis(token):
         story = db.query(Story).filter(Story.id == story_id).first()
         current_user = User.get_current_user_by_token(token)
@@ -121,10 +120,22 @@ def create_and_delete_like(story_id: int,
         raise HTTPException(status_code=401, detail="Токен устарел")
 
 
-@router.get("/story/{story_id}/likes_count")
+@router.get("/likes_count/{story_id}")
 def get_likes_count(story_id: int, db: Session = Depends(get_db)):
     story = db.query(Story).filter(Story.id == story_id).first()
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
     likes_count = db.query(Like).filter(Like.story_id == story_id).count()
     return {"likes_count": likes_count}
+
+
+@router.get("/story_likes_user/{user_name}")
+def get_user_story_likes(username: str,
+                         db: Session = Depends(get_db)):
+    user = get_user(db, user_name=username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    likes = db.query(Like).filter(Like.owner_id == user.id).all()
+    if not user:
+        raise HTTPException(status_code=404, detail="Likes not found")
+    return {"user_story_likes": likes}

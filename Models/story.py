@@ -30,3 +30,6 @@ class Story(Base):  #
     complaints = relationship("Complaint_story", back_populates="story")
 
     PrimaryKeyConstraint("id", name="pk_story_id")
+
+    def _str_(self):
+        return f'Story #{self.id}'

@@ -43,3 +43,4 @@ def update_user(username: str,
     else:
         raise HTTPException(status_code=401, detail="Токен устарел")
 
+
