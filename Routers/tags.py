@@ -16,8 +16,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 @router.post('/tags', response_model=Tag)
-def create_tag(tag: TagBase, session: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    return tags.create_tag(tag=tag, session=session), {"message": "Tag created"}
+def create_tag(tag: TagBase, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    return tags.create_tag(tag=tag, session=db), {"message": "Tag created"}
+
+
+@router.get('/all_tags')
+def get_all_tags(db: Session = Depends(get_db)):
+    return db.query(Tags).all()
+
 
 
 @router.post("/user_tag")
